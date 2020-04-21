@@ -1,4 +1,5 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Description
+This app appends a frontend to the [blackjack-engine](https://github.com/nugaon/blackjack-engine) project for demo purpose. 
 
 ## Available Scripts
 
