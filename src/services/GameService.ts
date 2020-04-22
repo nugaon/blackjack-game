@@ -26,7 +26,8 @@ export interface PublicGameState {
   availableBets: SideBets;
   dealerCards: Array<Card>;
   dealerValue: State['dealerValue'];
-  history: Array<HistoryItem>
+  history: Array<HistoryItem>;
+  deckCardNumber: number;
 }
 
 export class GameService {
@@ -62,11 +63,13 @@ export class GameService {
       availableBets,
       dealerCards,
       dealerValue,
-      history
+      history,
+      deck
     } = this.game.getState()
     const state = this.game.getState()
     console.log('state', state)
     const playersWithBank = players.map(player => this.getPlayerWithBank(player))
+    const deckCardNumber = deck.length
 
     return {
       players: playersWithBank,
@@ -74,7 +77,8 @@ export class GameService {
       availableBets,
       dealerCards,
       dealerValue,
-      history
+      history,
+      deckCardNumber
     }
   }
 
@@ -107,6 +111,9 @@ export class GameService {
         throw Error(`Error at adding prizes to ${player.name} player's bank`)
       }
       playerBank.bank += player.finalWin
+      playerBank.bank += player.sideBetWins.luckyLucky ? player.sideBetWins.luckyLucky : 0
+      playerBank.bank += player.sideBetWins.perfectPairs ? player.sideBetWins.perfectPairs : 0
+      playerBank.bank += player.sideBetWins.insurance ? player.sideBetWins.insurance.win : 0
     })
 
     const state: State = presets.defaultState(this.rules)
@@ -144,7 +151,7 @@ export class GameService {
     //check at invalid state
     const { history } = this.game.dispatch(actions.bet({bet, playerId, sideBets}))
     if(!this.checkHistory(history)) {
-      return;
+      throw Error('Nope')
     }
     this.playersBank[playerId].bank -= bet
   }
@@ -156,7 +163,7 @@ export class GameService {
     const { history } = this.game.dispatch(actions.insurance({bet, playerId}))
     //check at invalid state
     if(!this.checkHistory(history)) {
-      return;
+      throw Error('Nope')
     }
     this.playersBank[playerId].bank -= bet
   }
@@ -172,8 +179,23 @@ export class GameService {
   }
 
   public split() {
+    const { players, stage } = this.game.getState()
+    const playerId = stage.activePlayerId
+    if (players === undefined || playerId === undefined) {
+      throw Error('No players in the game... hmmm..')
+    }
+
+    const activeHandId = stage.activeHandId ? stage.activeHandId : 0
+    const activeHand = players[playerId].hands[activeHandId]
+    const bet = activeHand.bet ? activeHand.bet : 0
+    if(this.playersBank[playerId].bank < bet) {
+      alert('You don\'t have enough money for that!')
+    }
     const { history } = this.game.dispatch(actions.split())
-    this.checkHistory(history)
+    if(!this.checkHistory(history)){
+      return;
+    }
+    this.playersBank[playerId].bank -= bet
   }
 
   public hit() {
@@ -181,9 +203,10 @@ export class GameService {
     this.checkHistory(history)
   }
 
-  public double(playerId: number) {
+  public double() {
     const { players, stage } = this.game.getState()
-    if (players === undefined) {
+    const playerId = stage.activePlayerId
+    if (players === undefined || playerId === undefined) {
       throw Error('No players in the game... hmmm..')
     }
     const activeHandId = stage.activeHandId ? stage.activeHandId : 0
@@ -204,8 +227,7 @@ export class GameService {
     const lastHistoryItem = history[history.length - 1]
     if(lastHistoryItem && lastHistoryItem.action.type === 'INVALID') {
       const info = lastHistoryItem.action.payload ? lastHistoryItem.action.payload.info : ''
-      alert(`Invalid action! ${info}`)
-      return false
+      throw Error(info)
     }
     return true
   }

@@ -2,7 +2,7 @@
   "name": "blackjack-game",
   "version": "0.0.1",
   "dependencies": {
-    "blackjack-engine": "0.1.0",
+    "blackjack-engine": "^0.1.2",
     "bootstrap": "^4.4.1",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.1",

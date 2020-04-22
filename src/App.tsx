@@ -9,10 +9,10 @@ import { GameService, PlayerWithBank } from './services/GameService';
 
 let gameService: GameService;
 
-const engineCardsToDom = (cards: Array<EngineCard>): Array<React.ReactNode> => {
+const engineCardsToDom = (cards: Array<EngineCard>, size = 20): Array<React.ReactNode> => {
   return cards.map(engineCard => {
     return (
-      <Card key={engineCard.text + engineCard.suite} rank={engineCard.text} suite={engineCard.suite} />
+      <Card key={engineCard.text + engineCard.suite} rank={engineCard.text} suite={engineCard.suite} size={size}/>
     )
   })
 }
@@ -42,7 +42,7 @@ const PlayerField = ({
   const [betSent, setBetSent] = useState(false)
   const [insuranceSent, setInsuranceSent] = useState(false)
   useEffect(() => {
-    if(stage === 'STAGE_PLAYERS_TURN') {
+    if(stage === 'STAGE_DONE') {
       setBetSent(false)
       setInsuranceSent(false)
     }
@@ -52,6 +52,9 @@ const PlayerField = ({
     activeHand
     :
     (hands ? hands.length - 1 : activeHand)
+  const miniDomCards = hands
+    .filter((hand, i) => i !== showHandId)
+    .map(hand => engineCardsToDom(hand.cards, 5))
   const activeHandInEngine: Hand | undefined  = showHandId > -1 ? hands[showHandId] : undefined
   const domCards = engineCardsToDom(activeHandInEngine ? activeHandInEngine.cards : [])
   const name = playerInEngine ? playerInEngine.name : passedName
@@ -75,6 +78,8 @@ const PlayerField = ({
     canDouble = activeHandInEngine.availableActions.double
     canSurrender = activeHandInEngine.availableActions.surrender
     canSplit = activeHandInEngine.availableActions.split
+      && activeHandInEngine.cards
+      && activeHandInEngine.cards.length > 1
     canHit = activeHandInEngine.availableActions.hit
     canDouble = activeHandInEngine.availableActions.double
   }
@@ -104,9 +109,13 @@ const PlayerField = ({
     }
     console.log('posi', positionInEngine)
     const bet = +e.target.elements.bet.value
-    gameService.bet(bet, positionInEngine)
-    setBetSent(true)
-    onEngineAction()
+    try {
+      gameService.bet(bet, positionInEngine)
+      setBetSent(true)
+      onEngineAction()
+    } catch(e) {
+      alert(e.message)
+    }
   }
 
   const handleInsurance = (e) => {
@@ -119,9 +128,13 @@ const PlayerField = ({
     }
     console.log('posi', positionInEngine)
     const bet = +e.target.elements.bet.value
-    gameService.insurance(bet, positionInEngine)
-    setInsuranceSent(true)
-    onEngineAction()
+    try {
+      gameService.insurance(bet, positionInEngine)
+      setInsuranceSent(true)
+      onEngineAction()
+    } catch(e) {
+      alert(e.message)
+    }
   }
 
   const handlePlayerAction = (actionName: 'HIT' | 'STAND' | 'SURRENDER' | 'SPLIT' | 'DOUBLE') => {
@@ -142,11 +155,19 @@ const PlayerField = ({
         break
       }
       case 'SPLIT': {
-        gameService.split()
+        try {
+          gameService.split()
+        } catch(e) {
+          alert(e.message)
+        }
         break
       }
       case 'DOUBLE': {
-        gameService.double(positionInEngine)
+        try {
+          gameService.double()
+        } catch(e) {
+          alert(e.message)
+        }
         break
       }
     }
@@ -186,12 +207,23 @@ const PlayerField = ({
                 </CardGroup>
               </CardContainer>
 
-              <div style={{color: 'white'}}>
+              <CardContainer cardStyle='inText'>
+                {miniDomCards.map((cards, i) => {
+                    return <CardGroup key={i} grouping="table">
+                      <span style={{color: 'white'}}>{i + 1}.</span>
+                      {cards}
+                    </CardGroup>
+                 })}
+
+              </CardContainer>
+
+              <div style={{color: 'white', clear: 'both'}}>
                 <div hidden={playerValue === 0}>
+                  {showHandId + 1 }. hand <br />
                   {playerValue} Value | <span hidden={handBet === 0}>{handBet} €</span>
                 </div>
                 <div hidden={playerInEngine === undefined || playerInEngine.bank === undefined}>
-                  {playerInEngine && playerInEngine.bank ? playerInEngine.bank : 0} €
+                  Bank {playerInEngine && playerInEngine.bank ? playerInEngine.bank : 0} €
                 </div>
                 <div hidden={finalWin === 0}>
                   Win: {finalWin}
@@ -203,7 +235,7 @@ const PlayerField = ({
                   <InputGroup>
                     <Form.Control
                       name="bet"
-                      defaultValue="1"
+                      defaultValue="10"
                       type="number"
                       style={{textAlign: 'right'}}/>
                     <Button
@@ -367,6 +399,7 @@ function App() {
       dealerCards,
       dealerValue,
       history,
+      deckCardNumber
     } = gameService.getPublicState()
     console.log('history', history)
     const stageName = stage.name
@@ -399,6 +432,8 @@ function App() {
     }
     console.log(playerFields)
     setPlayerFields(playerFields)
+    const dn = Math.floor(deckCardNumber / 8)
+    setDeckDom(getDeckDom(dn === 0? 1 : dn))
   }
 
   let stageText = ''
