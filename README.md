@@ -1,5 +1,6 @@
 # Description
-This app appends a frontend to the [blackjack-engine](https://github.com/nugaon/blackjack-engine) project for demo purpose. 
+This app appends a frontend to the [blackjack-engine](https://github.com/nugaon/blackjack-engine) project for demo purpose.
+For cards many thanks for [Anika Henke](https://github.com/selfthinker/CSS-Playing-Cards).
 
 ## Available Scripts
 

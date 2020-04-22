@@ -1,5 +1,29 @@
+@font-face {
+  font-family: 'Casino Queen Normal';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Casino Queen Normal'), url('./css/fonts/CASIQN__.woff') format('woff');
+}
+
 .App {
   text-align: center;
+  background-image: url('./css/pool_table.png');
+  height: 100vh;
+  color: black;
+  font-family: serif;
+}
+
+.btn-primary {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+}
+
+html {
+
+}
+
+.error {
+  color: red
 }
 
 .App-logo {
@@ -35,4 +59,43 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Player Cards, tables */
+
+.cardHolder {
+  background-color: rgb(0, 0, 0, 0.2);
+  padding: 36px 0 24px;
+  border-radius: 25px;
+  min-height: 200px;
+}
+
+.title {
+  padding: 24px;
+  font-size: 4em;
+  font-family: 'Casino Queen Normal', serif;
+}
+
+.sub-title {
+  font-size: 2em;
+  font-family: 'Casino Queen Normal', serif;
+}
+
+.playerField {
+}
+
+.playerFields {
+}
+
+.tableDevider {
+  padding: 24px 0;
+  min-height: 50px;
+}
+
+/* Deck */
+.floatTopRight {
+  position: fixed;
+  top: 0;
+  right: 0;
+  padding: 6em 12em 6em;
 }

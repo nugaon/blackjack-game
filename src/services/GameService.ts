@@ -35,7 +35,7 @@ export class GameService {
   private playersBank!: Array<PlayerBank>; //always has to be deducted with bets
   private rules!: Rule
 
-  GameService(players: Array<PlayerBank>, decks = 1) {
+  constructor(players: Array<PlayerBank>, decks = 1) {
     this.playersBank = players
     //init state for game init
     this.rules = presets.getDefaultRules()
@@ -64,6 +64,8 @@ export class GameService {
       dealerValue,
       history
     } = this.game.getState()
+    const state = this.game.getState()
+    console.log('state', state)
     const playersWithBank = players.map(player => this.getPlayerWithBank(player))
 
     return {
@@ -92,17 +94,28 @@ export class GameService {
     }
   }
 
-  public newRound(playersLeave: Array<string>): { shuffled: boolean } {
-    const { stage, deck } = this.game.getState()
+  /// playerLeave is the name of the players
+  public newRound(playersLeave?: Array<string>): { shuffled: boolean } {
+    const { stage, deck, players } = this.game.getState()
     if(stage.name !== 'STAGE_DONE') {
       throw Error(`Tried to make new round in a wrong stage: ${stage.name}`)
     }
+    //add winning prizes to bank
+    players.forEach(player => {
+      const playerBank = this.playersBank.find(pb => pb.name === player.name)
+      if(playerBank === undefined) {
+        throw Error(`Error at adding prizes to ${player.name} player's bank`)
+      }
+      playerBank.bank += player.finalWin
+    })
 
     const state: State = presets.defaultState(this.rules)
     // filter out players who left
-    this.playersBank = this.playersBank.filter(player => {
-      return playersLeave.findIndex(playerLeave => playerLeave === player.name) !== -1
-    })
+    if(playersLeave) {
+      this.playersBank = this.playersBank.filter(player => {
+        return playersLeave.findIndex(playerLeave => playerLeave === player.name) === -1
+      })
+    }
     state.players = this.playersInit(this.playersBank)
     // every player can get 4 cards and the dealer 3 at the new round in the worst case
     const shuffled: boolean = deck.length < state.players.length * 4 + 3
@@ -111,5 +124,89 @@ export class GameService {
     }
     this.game = new Game(state)
     return { shuffled }
+  }
+
+  public getPlayerNamesWithZeroBank(): Array<string> {
+    const { players } = this.game.getState()
+    return players.map(
+      player => this.getPlayerWithBank(player)
+    ).filter(
+      player => player.bank === 0
+    ).map(
+      player => player.name
+    )
+  }
+
+  public bet(bet: number, playerId: number, sideBets?: { luckyLucky: number, perfectPairs: number }) {
+    if(this.playersBank[playerId].bank - bet < 0) {
+      return
+    }
+    //check at invalid state
+    const { history } = this.game.dispatch(actions.bet({bet, playerId, sideBets}))
+    if(!this.checkHistory(history)) {
+      return;
+    }
+    this.playersBank[playerId].bank -= bet
+  }
+
+  public insurance(bet: number, playerId: number) {
+    if(this.playersBank[playerId].bank - bet < 0) {
+      return
+    }
+    const { history } = this.game.dispatch(actions.insurance({bet, playerId}))
+    //check at invalid state
+    if(!this.checkHistory(history)) {
+      return;
+    }
+    this.playersBank[playerId].bank -= bet
+  }
+
+  public stand() {
+    const { history } = this.game.dispatch(actions.stand())
+    this.checkHistory(history)
+  }
+
+  public surrender() {
+    const { history } = this.game.dispatch(actions.surrender())
+    this.checkHistory(history)
+  }
+
+  public split() {
+    const { history } = this.game.dispatch(actions.split())
+    this.checkHistory(history)
+  }
+
+  public hit() {
+    const { history } = this.game.dispatch(actions.hit())
+    this.checkHistory(history)
+  }
+
+  public double(playerId: number) {
+    const { players, stage } = this.game.getState()
+    if (players === undefined) {
+      throw Error('No players in the game... hmmm..')
+    }
+    const activeHandId = stage.activeHandId ? stage.activeHandId : 0
+    const activeHand = players[playerId].hands[activeHandId]
+    const bet = activeHand.bet ? activeHand.bet : 0
+    if(this.playersBank[playerId].bank < bet) {
+      alert('You don\'t have enough money for that!')
+    }
+    const { history } = this.game.dispatch(actions.double())
+    if(!this.checkHistory(history)){
+      return;
+    }
+    this.playersBank[playerId].bank -= bet
+  }
+
+  /// If invalid action happened returns false
+  checkHistory(history: State['history']): boolean {
+    const lastHistoryItem = history[history.length - 1]
+    if(lastHistoryItem && lastHistoryItem.action.type === 'INVALID') {
+      const info = lastHistoryItem.action.payload ? lastHistoryItem.action.payload.info : ''
+      alert(`Invalid action! ${info}`)
+      return false
+    }
+    return true
   }
 }
