@@ -154,8 +154,16 @@ export class GameService {
   }
 
   public bet(bet: number, playerId: number, sideBets?: { luckyLucky: number, perfectPairs: number }) {
-    if(this.playersBank[playerId].bank - bet < 0) {
-      return
+    const bank = this.playersBank[playerId].bank
+    if(bank - bet < 0
+      || bet < 0
+      || (sideBets && (
+          bank - sideBets.luckyLucky < 0
+          || sideBets.luckyLucky < 0
+          || bank - sideBets.perfectPairs < 0
+          || sideBets.perfectPairs < 0))
+    ) {
+      throw Error('Cannot take this amount of bet')
     }
     //check at invalid state
     const { history } = this.game.dispatch(actions.bet({bet, playerId, sideBets}))
@@ -166,8 +174,8 @@ export class GameService {
   }
 
   public insurance(bet: number, playerId: number) {
-    if(this.playersBank[playerId].bank - bet < 0) {
-      return
+    if(this.playersBank[playerId].bank - bet < 0 || bet < 0) {
+      throw Error('Cannot take this amount of bet')
     }
     const { history } = this.game.dispatch(actions.insurance({bet, playerId}))
     //check at invalid state
