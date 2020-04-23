@@ -123,6 +123,13 @@ export class GameService {
         return playersLeave.findIndex(playerLeave => playerLeave === player.name) === -1
       })
     }
+    //filter out bankroupt gamers
+    const lostGamers = this.getPlayerNamesWithZeroBank();
+    if(lostGamers.length > 0) {
+      this.playersBank = this.playersBank.filter(player => {
+        return lostGamers.findIndex(playerLeave => playerLeave === player.name) === -1
+      })
+    }
     state.players = this.playersInit(this.playersBank)
     // every player can get 4 cards and the dealer 3 at the new round in the worst case
     const shuffled: boolean = deck.length < state.players.length * 4 + 3
@@ -133,6 +140,8 @@ export class GameService {
     return { shuffled }
   }
 
+  /// Returns players' names who has zero balance in the bank
+  /// should be called after give winning prizes
   public getPlayerNamesWithZeroBank(): Array<string> {
     const { players } = this.game.getState()
     return players.map(

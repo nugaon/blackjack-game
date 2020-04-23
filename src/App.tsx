@@ -382,8 +382,7 @@ function App() {
       )
 
     } else {
-      const lostGamers = gameService.getPlayerNamesWithZeroBank();
-      gameService.newRound(lostGamers)
+      gameService.newRound()
     }
     mapGameEngineState()
   }
