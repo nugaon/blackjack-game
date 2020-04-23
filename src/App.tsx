@@ -201,8 +201,8 @@ const PlayerField = ({
                   </InputGroup.Append>
                 </InputGroup>
               </Form>
-              <CardContainer rotateHand={true}>
-                <CardGroup grouping="hand">
+              <CardContainer style={{ display: 'inline-block' }} rotateHand={true}>
+                <CardGroup style={{left: -70}} grouping="hand">
                   {domCards}
                 </CardGroup>
               </CardContainer>
